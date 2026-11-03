@@ -113,7 +113,7 @@ with tab2:
         p_twin = np.trapezoid(psd_twin[b_mask], f[b_mask])
         fidelity = max(0.0, 100.0 - abs((p_twin - p_clean) / (p_clean + 1e-9)) * 100.0)
         band_powers.append({"Band": band_name, "Truth Power": f"{p_clean:.3e}", "Twin Power": f"{p_twin:.3e}", "Fidelity": f"{fidelity:.1f}%"})
-    st.dataframe(pd.DataFrame(band_powers), use_container_width=True)
+    st.dataframe(pd.DataFrame(band_powers), width="stretch")
 
 with tab3:
     st.subheader("Extracellular Spike Detection (Adaptive Thresholding)")
