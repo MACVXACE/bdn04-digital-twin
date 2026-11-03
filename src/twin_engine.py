@@ -42,8 +42,8 @@ class WetwareDigitalTwin:
             
             # 2. Measurement update
             z = noisy_signal[k]
-            y_tilde = z - float(H @ x_pred)  # Innovation / residual
-            S = float(H @ P_pred @ H.T) + R   # Innovation covariance
+            y_tilde = z - (H @ x_pred).item()  # Innovation / residual
+            S = (H @ P_pred @ H.T).item() + R   # Innovation covariance
             K = (P_pred @ H.T) / S            # Optimal Kalman Gain (2x1)
             
             x = x_pred + K.flatten() * y_tilde
