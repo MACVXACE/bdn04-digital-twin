@@ -1,0 +1,46 @@
+# Heavy data & baseline signals
+data/raw/*
+data/baselines/*
+data/processed/*
+!data/raw/.gitkeep
+!data/baselines/.gitkeep
+!data/processed/.gitkeep
+
+# Scientific & array binary dumps
+*.npy
+*.npz
+*.mat
+*.h5
+*.hdf5
+*.edf
+*.bdf
+*.gdf
+*.fif
+*.pkl
+*.pickle
+*.parquet
+*.feather
+*.csv
+*.tsv
+*.bin
+*.dat
+*.wav
+*.flac
+
+# Archives
+*.zip
+*.tar*
+*.7z
+*.rar
+
+# Python & Environment
+__pycache__/
+*.py[cod]
+.env
+.venv
+env/
+venv/
+.streamlit/secrets.toml
+.DS_Store
+.vscode/
+.idea/
