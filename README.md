@@ -4,7 +4,9 @@
 
 Real-time state-space digital twin and 2-state Kalman observer for wetware biological neural network electrophysiology.
 
-## Overview
+## 🚀 **Live Interactive App:** [macvxace-bdn04-digital-twin.streamlit.app](https://macvxace-bdn04-digital-twin-app-gcxojn.streamlit.app)
+
+Overview
 - **Decoupled 2-State Kalman Filter**: Separates biological LFPs and action potential spikes from electrode baseline wander.
 - **Biophysical Signal Engine**: Generates composite Theta/Alpha/Gamma oscillations with stochastic Poisson spike trains.
 - **Noise Synthesis**: Simulates real MEA wetware environments with 1/f pink noise and slow electrochemical drift.
