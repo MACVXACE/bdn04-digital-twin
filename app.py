@@ -85,7 +85,7 @@ def svg_chart(x, series, height=220):
     if abs(xmax - xmin) < 1e-9:
         xmax += 1.0
 
-    lines = [f"<svg viewBox=\"0 0 {w} {h}\" style=\"width:100%;height:auto;background:#0e1117;border:1px solid #262730;border-radius:8px;margin-bottom:12px;font-family:sans-serif;\">"]
+    lines = [f"<svg xmlns="http://www.w3.org/2000/svg" viewBox=\"0 0 {w} {h}\" style=\"width:100%;height:auto;background:#0e1117;border:1px solid #262730;border-radius:8px;margin-bottom:12px;font-family:sans-serif;\">"]
     for i in range(5):
         gy = pad_t + ph * (i / 4.0)
         gval = ymax - (ymax - ymin) * (i / 4.0)
