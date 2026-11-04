@@ -2,12 +2,77 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from scipy import signal
-from src.signal_generator import generate_wetware_signal, inject_wetware_noise
-from src.twin_engine import run_kalman_observer, calculate_rmse
 
 st.set_page_config(page_title="BDN-04 Wetware Digital Twin", layout="wide")
 
-def svg_chart(x, series, height=220, y_label=""):
+def generate_wetware_signal(fs=1000, duration=1.5, spike_rate_hz=8.0, seed=42):
+    rng = np.random.default_rng(seed)
+    t = np.linspace(0, duration, int(fs * duration), endpoint=False)
+    lfp = (
+        0.45 * np.sin(2 * np.pi * 6.0 * t)
+        + 0.30 * np.sin(2 * np.pi * 10.0 * t + 0.5)
+        + 0.15 * np.sin(2 * np.pi * 40.0 * t + 1.2)
+    )
+    spikes = np.zeros_like(t)
+    n_spikes = rng.poisson(spike_rate_hz * duration)
+    if n_spikes > 0:
+        locs = rng.choice(len(t) - 20, size=n_spikes, replace=False)
+        k_t = np.arange(20) / fs
+        waveform = -1.8 * np.exp(-k_t / 0.0015) * np.sin(2 * np.pi * 500 * k_t)
+        for idx in locs:
+            spikes[idx:idx+20] += waveform
+    return t, lfp + spikes
+
+def inject_wetware_noise(clean_sig, snr_db=7.0, pink_weight=1.0, drift_amp=0.6, seed=42):
+    rng = np.random.default_rng(seed)
+    n = len(clean_sig)
+    white = rng.standard_normal(n)
+    fft_vals = np.fft.rfft(white)
+    freqs = np.fft.rfftfreq(n)
+    scale = np.ones_like(freqs)
+    scale[1:] = 1.0 / np.sqrt(freqs[1:])
+    pink = np.fft.irfft(fft_vals * scale, n=n)
+    pink = pink / (np.std(pink) + 1e-12)
+    raw_noise = pink_weight * pink + (1.0 - pink_weight) * white
+    raw_noise = raw_noise / (np.std(raw_noise) + 1e-12)
+    sig_power = np.mean(clean_sig ** 2)
+    target_noise_power = sig_power / (10 ** (snr_db / 10.0))
+    scaled_noise = raw_noise * np.sqrt(target_noise_power)
+    t_norm = np.linspace(0, 1, n)
+    drift = drift_amp * (0.6 * np.sin(2 * np.pi * 0.7 * t_norm) + 0.4 * np.cos(2 * np.pi * 1.8 * t_norm))
+    return clean_sig + scaled_noise + drift, drift
+
+def run_kalman_observer(noisy_sig, q_neural=1e-2, q_drift=1e-5, r_val=1e-1):
+    n = len(noisy_sig)
+    A = np.array([[0.98, 0.0], [0.0, 0.9995]])
+    H = np.array([[1.0, 1.0]])
+    Q = np.array([[q_neural, 0.0], [0.0, q_drift]])
+    R = float(r_val)
+    x = np.zeros((2, 1))
+    P = np.eye(2) * 0.5
+    est_neural = np.zeros(n)
+    est_drift = np.zeros(n)
+    innovations = np.zeros(n)
+    cov_trace = np.zeros(n)
+    for k in range(n):
+        x_pred = A @ x
+        P_pred = A @ P @ A.T + Q
+        z = noisy_sig[k]
+        y_tilde = z - (H @ x_pred).item()
+        S = (H @ P_pred @ H.T).item() + R
+        K = (P_pred @ H.T) / S
+        x = x_pred + K * y_tilde
+        P = (np.eye(2) - K @ H) @ P_pred
+        est_neural[k] = x[0, 0]
+        est_drift[k] = x[1, 0]
+        innovations[k] = y_tilde
+        cov_trace[k] = np.trace(P)
+    return est_neural, est_drift, innovations, cov_trace
+
+def calculate_rmse(true_sig, est_sig):
+    return float(np.sqrt(np.mean((np.asarray(true_sig) - np.asarray(est_sig)) ** 2)))
+
+def svg_chart(x, series, height=220):
     w, h = 900, height
     pad_l, pad_r, pad_t, pad_b = 55, 20, 25, 30
     pw, ph = w - pad_l - pad_r, h - pad_t - pad_b
