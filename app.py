@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from scipy import signal
+import base64
 
 st.set_page_config(page_title="BDN-04 Wetware Digital Twin", layout="wide")
 
@@ -85,33 +86,32 @@ def svg_chart(x, series, height=220):
     if abs(xmax - xmin) < 1e-9:
         xmax += 1.0
 
-    lines = [f"<svg xmlns="http://www.w3.org/2000/svg" viewBox=\"0 0 {w} {h}\" style=\"width:100%;height:auto;background:#0e1117;border:1px solid #262730;border-radius:8px;margin-bottom:12px;font-family:sans-serif;\">"]
+    lines = [f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' style='width:100%;height:auto;background:#0e1117;border:1px solid #262730;border-radius:8px;margin-bottom:12px;font-family:sans-serif;'>"]
     for i in range(5):
         gy = pad_t + ph * (i / 4.0)
         gval = ymax - (ymax - ymin) * (i / 4.0)
-        lines.append(f"<line x1=\"{pad_l}\" y1=\"{gy:.1f}\" x2=\"{w-pad_r}\" y2=\"{gy:.1f}\" stroke=\"#262730\" stroke-width=\"1\"/>")
-        lines.append(f"<text x=\"{pad_l-8}\" y=\"{gy+4:.1f}\" fill=\"#a3a8b8\" font-size=\"11\" text-anchor=\"end\">{gval:.2f}</text>")
+        lines.append(f"<line x1='{pad_l}' y1='{gy:.1f}' x2='{w-pad_r}' y2='{gy:.1f}' stroke='#262730' stroke-width='1'/>")
+        lines.append(f"<text x='{pad_l-8}' y='{gy+4:.1f}' fill='#a3a8b8' font-size='11' text-anchor='end'>{gval:.2f}</text>")
 
     for i in range(6):
         gx = pad_l + pw * (i / 5.0)
         xval = xmin + (xmax - xmin) * (i / 5.0)
-        lines.append(f"<text x=\"{gx:.1f}\" y=\"{h-8}\" fill=\"#a3a8b8\" font-size=\"11\" text-anchor=\"middle\">{xval:.2f}</text>")
+        lines.append(f"<text x='{gx:.1f}' y='{h-8}' fill='#a3a8b8' font-size='11' text-anchor='middle'>{xval:.2f}</text>")
 
     for idx, (label, y, color, dash) in enumerate(series):
         y_arr = np.asarray(y, dtype=float)
         xs = pad_l + (x - xmin) / (xmax - xmin) * pw
         ys = pad_t + (ymax - y_arr) / (ymax - ymin) * ph
         pts = " ".join(f"{px:.1f},{py:.1f}" for px, py in zip(xs, ys))
-        da = f"stroke-dasharray=\"{dash}\"" if dash else ""
-        lines.append(f"<polyline fill=\"none\" stroke=\"{color}\" stroke-width=\"1.8\" {da} points=\"{pts}\"/>")
+        da = f"stroke-dasharray='{dash}'" if dash else ""
+        lines.append(f"<polyline fill='none' stroke='{color}' stroke-width='1.8' {da} points='{pts}'/>")
         lx = pad_l + 10 + idx * 190
-        lines.append(f"<rect x=\"{lx}\" y=\"6\" width=\"12\" height=\"12\" fill=\"{color}\" rx=\"2\"/>")
-        lines.append(f"<text x=\"{lx+18}\" y=\"16\" fill=\"#fafafa\" font-size=\"12\">{label}</text>")
+        lines.append(f"<rect x='{lx}' y='6' width='12' height='12' fill='{color}' rx='2'/>")
+        lines.append(f"<text x='{lx+18}' y='16' fill='#fafafa' font-size='12'>{label}</text>")
 
     lines.append("</svg>")
-    import base64
     b64 = base64.b64encode("".join(lines).encode("utf-8")).decode("utf-8")
-    st.markdown(f"<img src=\"data:image/svg+xml;base64,{b64}\" style=\"width:100%;height:auto;display:block;margin-bottom:12px;\"/>", unsafe_allow_html=True)
+    st.markdown(f"<img src='data:image/svg+xml;base64,{b64}' style='width:100%;height:auto;display:block;margin-bottom:12px;'/>", unsafe_allow_html=True)
 
 st.title("BDN-04 Biological Computing Digital Twin")
 st.caption("Dual-State Observer & Real-Time Electrophysiology Reconstruction Engine")
