@@ -109,7 +109,9 @@ def svg_chart(x, series, height=220):
         lines.append(f"<text x=\"{lx+18}\" y=\"16\" fill=\"#fafafa\" font-size=\"12\">{label}</text>")
 
     lines.append("</svg>")
-    st.markdown("".join(lines), unsafe_allow_html=True)
+    import base64
+    b64 = base64.b64encode("".join(lines).encode("utf-8")).decode("utf-8")
+    st.markdown(f"<img src=\"data:image/svg+xml;base64,{b64}\" style=\"width:100%;height:auto;display:block;margin-bottom:12px;\"/>", unsafe_allow_html=True)
 
 st.title("BDN-04 Biological Computing Digital Twin")
 st.caption("Dual-State Observer & Real-Time Electrophysiology Reconstruction Engine")
