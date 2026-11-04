@@ -121,7 +121,7 @@ S.markdown(f"<div class='title'>BDN-04</div>"
            unsafe_allow_html=True)
 
 S.markdown("**◢ STORAGE**")
-payload = S.text_input("PAYLOAD", "A16Z_ACADEMY", max_chars=40)
+payload = S.text_input("PAYLOAD", "BDN_04_ACTIVE", max_chars=40)
 N_synth = S.slider("TdT SEQUENCE LENGTH (bp)", 50, 2000, 500, 50)
 Y = S.slider("STEPWISE COUPLING YIELD", 0.970, 0.999, 0.992, 0.001, format="%.3f")
 p_base = S.slider("HOMOPOLYMER HAZARD p_base", 0.000, 0.020, 0.004, 0.001, format="%.3f")
@@ -190,7 +190,7 @@ for yv, col in ((0.999, RECOVER), (sto['coupling_yield'], CLEAN), (0.970, CORRUP
 fig.add_vline(x=sto['N_synth'], line=dict(color=MUTED, dash="dot"))
 fig.update_yaxes(range=[0, 100])
 cc[1].plotly_chart(style(fig, 210, "η(N) full-length  [%]").update_xaxes(title_text="synthesis length N  [bp]"),
-                   width='stretch', key="yield")
+                   use_container_width=True, key="yield")
 
 # =========================================================================== #
 # SECTION 2 : CHANNEL
@@ -212,7 +212,7 @@ bode.update_xaxes(type="log", gridcolor=GRID)
 bode.update_xaxes(title_text="frequency  [Hz]", row=2, col=1, title_font=dict(size=10))
 bode.update_yaxes(title_text="|H|  [dB]", row=1, col=1, gridcolor=GRID, title_font=dict(size=10))
 bode.update_yaxes(title_text="∠H  [deg]", row=2, col=1, gridcolor=GRID, title_font=dict(size=10))
-cc[0].plotly_chart(style(bode, 330), width='stretch', key="bode")
+cc[0].plotly_chart(style(bode, 330), use_container_width=True, key="bode")
 
 ld = "HIGH-Z" if load_mode == "high_z" else "50 Ω"
 lcol = CLEAN if load_mode == "high_z" else CORRUPT
@@ -256,7 +256,7 @@ f1 = go.Figure()
 f1.add_scatter(x=L["rf_t_us"], y=L["rf_clean"], line=dict(color=CLEAN, width=1.3),
                name="clean HFIM carrier (500 kHz)")
 f1.update_xaxes(title_text="time  [µs]", title_font=dict(size=10))
-st.plotly_chart(style(f1, 190, "v_tx  [a.u.]"), width='stretch', key="sc1")
+st.plotly_chart(style(f1, 190, "v_tx  [a.u.]"), use_container_width=True, key="sc1")
 
 # scope 2 : baseband buried
 f2 = go.Figure()
@@ -265,7 +265,7 @@ f2.add_scatter(x=L["bb_t_ms"], y=L["bb_primary"], line=dict(color=CORRUPT, width
 f2.add_scatter(x=L["bb_t_ms"], y=L["bb_data"], line=dict(color=INK, width=1.3, dash="dot"),
                name="true data baseband")
 f2.update_xaxes(title_text="time  [ms]", title_font=dict(size=10))
-st.plotly_chart(style(f2, 190, "baseband  [a.u.]"), width='stretch', key="sc2")
+st.plotly_chart(style(f2, 190, "baseband  [a.u.]"), use_container_width=True, key="sc2")
 
 # scope 3 : ANC recovery
 f3 = go.Figure()
@@ -276,7 +276,7 @@ f3.add_scatter(x=L["bb_t_ms"], y=L["bb_data"], line=dict(color=INK, width=1.0, d
 if L["lock_ms"] >= 0:
     f3.add_vline(x=L["lock_ms"], line=dict(color=AMBER, dash="dot"))
 f3.update_xaxes(title_text="time  [ms]", title_font=dict(size=10))
-st.plotly_chart(style(f3, 190, "recovered  [a.u.]"), width='stretch', key="sc3")
+st.plotly_chart(style(f3, 190, "recovered  [a.u.]"), use_container_width=True, key="sc3")
 
 # =========================================================================== #
 # SECTION 4 : RECOVERY
