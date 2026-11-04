@@ -1,33 +1,50 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from scipy import signal
 from src.signal_generator import generate_wetware_signal, inject_wetware_noise
 from src.twin_engine import run_kalman_observer, calculate_rmse
 
 st.set_page_config(page_title="BDN-04 Wetware Digital Twin", layout="wide")
 
-plt.style.use("dark_background")
+def svg_chart(x, series, height=220, y_label=""):
+    w, h = 900, height
+    pad_l, pad_r, pad_t, pad_b = 55, 20, 25, 30
+    pw, ph = w - pad_l - pad_r, h - pad_t - pad_b
+    all_y = np.concatenate([np.asarray(s[1], dtype=float) for s in series])
+    ymin, ymax = float(np.min(all_y)), float(np.max(all_y))
+    if abs(ymax - ymin) < 1e-9:
+        ymin -= 1.0
+        ymax += 1.0
+    xmin, xmax = float(x[0]), float(x[-1])
+    if abs(xmax - xmin) < 1e-9:
+        xmax += 1.0
 
-def render_plot(x, traces, ylabel="Amplitude (V)", height=2.6):
-    fig, ax = plt.subplots(figsize=(10, height), dpi=120)
-    fig.patch.set_facecolor("#0e1117")
-    ax.set_facecolor("#0e1117")
-    for label, y, color, alpha, lw, ls in traces:
-        ax.plot(x, y, label=label, color=color, alpha=alpha, linewidth=lw, linestyle=ls)
-    ax.set_ylabel(ylabel, fontsize=9, color="#fafafa")
-    ax.grid(True, color="#262730", alpha=0.6, linewidth=0.6)
-    ax.tick_params(colors="#a3a8b8", labelsize=8)
-    for spine in ["top", "right"]:
-        ax.spines[spine].set_visible(False)
-    for spine in ["bottom", "left"]:
-        ax.spines[spine].set_color("#262730")
-    if len(traces) > 1:
-        ax.legend(loc="upper right", frameon=False, fontsize=8)
-    fig.tight_layout()
-    st.pyplot(fig)
-    plt.close(fig)
+    lines = [f"<svg viewBox=\"0 0 {w} {h}\" style=\"width:100%;height:auto;background:#0e1117;border:1px solid #262730;border-radius:8px;margin-bottom:12px;font-family:sans-serif;\">"]
+    for i in range(5):
+        gy = pad_t + ph * (i / 4.0)
+        gval = ymax - (ymax - ymin) * (i / 4.0)
+        lines.append(f"<line x1=\"{pad_l}\" y1=\"{gy:.1f}\" x2=\"{w-pad_r}\" y2=\"{gy:.1f}\" stroke=\"#262730\" stroke-width=\"1\"/>")
+        lines.append(f"<text x=\"{pad_l-8}\" y=\"{gy+4:.1f}\" fill=\"#a3a8b8\" font-size=\"11\" text-anchor=\"end\">{gval:.2f}</text>")
+
+    for i in range(6):
+        gx = pad_l + pw * (i / 5.0)
+        xval = xmin + (xmax - xmin) * (i / 5.0)
+        lines.append(f"<text x=\"{gx:.1f}\" y=\"{h-8}\" fill=\"#a3a8b8\" font-size=\"11\" text-anchor=\"middle\">{xval:.2f}</text>")
+
+    for idx, (label, y, color, dash) in enumerate(series):
+        y_arr = np.asarray(y, dtype=float)
+        xs = pad_l + (x - xmin) / (xmax - xmin) * pw
+        ys = pad_t + (ymax - y_arr) / (ymax - ymin) * ph
+        pts = " ".join(f"{px:.1f},{py:.1f}" for px, py in zip(xs, ys))
+        da = f"stroke-dasharray=\"{dash}\"" if dash else ""
+        lines.append(f"<polyline fill=\"none\" stroke=\"{color}\" stroke-width=\"1.8\" {da} points=\"{pts}\"/>")
+        lx = pad_l + 10 + idx * 190
+        lines.append(f"<rect x=\"{lx}\" y=\"6\" width=\"12\" height=\"12\" fill=\"{color}\" rx=\"2\"/>")
+        lines.append(f"<text x=\"{lx+18}\" y=\"16\" fill=\"#fafafa\" font-size=\"12\">{label}</text>")
+
+    lines.append("</svg>")
+    st.markdown("".join(lines), unsafe_allow_html=True)
 
 st.title("BDN-04 Biological Computing Digital Twin")
 st.caption("Dual-State Observer & Real-Time Electrophysiology Reconstruction Engine")
@@ -77,16 +94,16 @@ view = slice(0, 600)
 
 with tab1:
     st.subheader("Time-Domain Neural Signal Reconstruction")
-    render_plot(t[view], [
-        ("Noisy Sensor Input", noisy_sig[view], "#4c78a8", 0.45, 1.0, "-"),
-        ("Ground Truth Bio-Signal", clean_sig[view], "#72b7b2", 0.9, 1.3, "-"),
-        ("Twin Neural Estimate", est_neural[view], "#ff6b6b", 0.95, 1.3, "--"),
+    svg_chart(t[view], [
+        ("Noisy Sensor Input", noisy_sig[view], "#4c78a8", ""),
+        ("Ground Truth Bio-Signal", clean_sig[view], "#72b7b2", ""),
+        ("Twin Neural Estimate", est_neural[view], "#ff6b6b", "5,3"),
     ])
     st.subheader("Isolated Electrode Baseline Wander (Drift State)")
-    render_plot(t[view], [
-        ("True Electrode Drift", true_drift[view], "#f58518", 0.85, 1.4, "-"),
-        ("Estimated Baseline Drift", est_drift[view], "#54a24b", 0.95, 1.4, "--"),
-    ], height=2.2)
+    svg_chart(t[view], [
+        ("True Electrode Drift", true_drift[view], "#f58518", ""),
+        ("Estimated Baseline Drift", est_drift[view], "#54a24b", "5,3"),
+    ], height=190)
 
 with tab2:
     st.subheader("Power Spectral Density (Welch PSD)")
@@ -94,34 +111,35 @@ with tab2:
     f_clean, psd_clean = signal.welch(clean_sig, fs, nperseg=256)
     f_twin, psd_twin = signal.welch(est_neural, fs, nperseg=256)
     mask = f_raw <= 120
-    render_plot(f_raw[mask], [
-        ("Noisy Input PSD (dB)", 10 * np.log10(psd_raw[mask] + 1e-12), "#4c78a8", 0.55, 1.2, "-"),
-        ("Ground Truth PSD (dB)", 10 * np.log10(psd_clean[mask] + 1e-12), "#72b7b2", 0.9, 1.4, "-"),
-        ("Twin Estimate PSD (dB)", 10 * np.log10(psd_twin[mask] + 1e-12), "#ff6b6b", 0.95, 1.4, "--"),
-    ], ylabel="PSD (dB/Hz)")
+    svg_chart(f_raw[mask], [
+        ("Noisy Input PSD (dB)", 10 * np.log10(psd_raw[mask] + 1e-12), "#4c78a8", ""),
+        ("Ground Truth PSD (dB)", 10 * np.log10(psd_clean[mask] + 1e-12), "#72b7b2", ""),
+        ("Twin Estimate PSD (dB)", 10 * np.log10(psd_twin[mask] + 1e-12), "#ff6b6b", "5,3"),
+    ])
 
     bands = {"Delta (1-4 Hz)": (1, 4), "Theta (4-8 Hz)": (4, 8), "Alpha (8-13 Hz)": (8, 13), "Beta (13-30 Hz)": (13, 30), "Gamma (30-80 Hz)": (30, 80)}
-    rows = []
+    md_table = "| Spectral Band | Ground Truth Power | Twin Reconstructed Power | Reconstruction Fidelity |\n|---|---|---|---|\n"
     for name, (low, high) in bands.items():
         idx = (f_clean >= low) & (f_clean <= high)
-        p_c = float(np.trapezoid(psd_clean[idx], f_clean[idx]))
-        p_t = float(np.trapezoid(psd_twin[idx], f_twin[idx]))
+        trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+        p_c = float(trapz_fn(psd_clean[idx], f_clean[idx]))
+        p_t = float(trapz_fn(psd_twin[idx], f_twin[idx]))
         fid = max(0.0, 100.0 - abs(p_c - p_t) / (p_c + 1e-9) * 100.0)
-        rows.append({"Band": name, "Ground Truth Power": f"{p_c:.4f}", "Twin Reconstructed Power": f"{p_t:.4f}", "Reconstruction Fidelity": f"{fid:.1f}%"})
-    st.table(pd.DataFrame(rows))
+        md_table += f"| {name} | {p_c:.4f} | {p_t:.4f} | {fid:.1f}% |\n"
+    st.markdown(md_table)
 
 with tab3:
     st.subheader("Extracellular Spike Detection (Adaptive Thresholding)")
     sigma = np.median(np.abs(est_neural)) / 0.6745
     thresh = -3.5 * sigma
-    render_plot(t[view], [
-        ("Twin Reconstructed Signal", est_neural[view], "#54a24b", 0.9, 1.2, "-"),
-        ("Detection Threshold", np.full_like(t[view], thresh), "#ff4b4b", 0.85, 1.2, "--"),
+    svg_chart(t[view], [
+        ("Twin Reconstructed Signal", est_neural[view], "#54a24b", ""),
+        ("Detection Threshold", np.full_like(t[view], thresh), "#ff4b4b", "6,4"),
     ])
     st.info(f"Calculated Noise Floor (σ): {sigma:.4f} | Spike Detection Threshold: {thresh:.4f} V")
 
 with tab4:
     st.subheader("Kalman Innovation Residuals (Zero-Mean Whiteness Check)")
-    render_plot(t[view], [("Innovation Residual", innovations[view], "#b279a2", 0.85, 1.1, "-")], height=2.2)
+    svg_chart(t[view], [("Innovation Residual", innovations[view], "#b279a2", "")], height=190)
     st.subheader("State Error Covariance Trace (Filter Convergence)")
-    render_plot(t[view], [("Trace(P) Convergence", cov_trace[view], "#eeca3b", 0.95, 1.4, "-")], height=2.2)
+    svg_chart(t[view], [("Trace(P) Convergence", cov_trace[view], "#eeca3b", "")], height=190)
