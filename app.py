@@ -67,7 +67,7 @@ st.markdown(f"""
   div[data-baseweb="select"]>div, .stTextInput input {{ font-family:{MONO}; }}
   .title {{ font-size:1.18rem; font-weight:700; letter-spacing:.04em; color:#e8eef7; }}
   .sublt {{ color:{MUTED}; font-size:0.66rem; letter-spacing:.06em; }}
-[data-testid="stIconMaterial"], .material-symbols-rounded, [class*="material-symbols"] { font-family: "Material Symbols Rounded" !important; }
+[data-testid="stIconMaterial"], .material-symbols-rounded, [class*="material-symbols"] {{ font-family: "Material Symbols Rounded" !important; }}
 </style>
 """, unsafe_allow_html=True)
 
